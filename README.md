@@ -8,6 +8,9 @@ Install the following Python packages to run the code in the project:
 2. Keras: `pip install keras`  
 3. iPython: `pip install ipython`  
 4. [Optional] [Hualos](https://github.com/fchollet/hualos), for live visualization of loss function.  
+5. [Optional] h5py, for saving trained models:
+  * Install [HDF5](http://micro.stanford.edu/wiki/Install_HDF5): `sudo apt-get install libhdf5-serial-dev`
+  * Then, `pip install h5py`  
 
 ## Team Members
 * Angad Gill

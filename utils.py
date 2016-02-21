@@ -13,8 +13,7 @@ from keras.utils import np_utils
 from matplotlib import pyplot as plt
 import matplotlib.cm as cm
 
-import math
-
+import numpy as np
 
 
 def save_model(model, name):
@@ -93,7 +92,7 @@ def output_at_layer(input_image, model_name, layer_num, verbose=False):
 
     Parameters:
     -----------
-    input_image: Numpy array that the model can accept
+    input_image: Image in Numpy format from the dataset
     model_name: Name to be used with the load_model() function
     layer_num: Layer number between 1 and len(model.layers)
 
@@ -104,7 +103,7 @@ def output_at_layer(input_image, model_name, layer_num, verbose=False):
     model = load_model(model_name)
     model.layers = model.layers[:layer_num]  # Truncates layers
     model.compile(loss=model.loss, optimizer=model.optimizer)  # Recompiles model
-    output_image = model.predict(input_image)  # Uses predict to get ouput
+    output_image = model.predict(np.array([input_image]))  # Uses predict to get ouput
     
     if verbose:
         # Print layer and image info
@@ -133,11 +132,11 @@ def visualize_output(output_image, figsize=(15,15)):
         No returns.
 
     """
-    feature_maps = output_image.shape[0]
-    rows_columns = int(math.ceil(math.sqrt(feature_maps)))  # To create a square grid
+    feature_maps = output_image.shape[1]
+    rows_columns = int(np.ceil(np.sqrt(feature_maps)))  # To create a square grid
 
     plt.figure(figsize=figsize)
-    for i, image in enumerate(output_image):  # Iterate through all feature maps
+    for i, image in enumerate(output_image[0]):  # Iterate through all feature maps
         plt.subplot(rows_columns, rows_columns, i+1)
         plt.axis('off')  # Turn off axes to save space on the visualization
         plt.imshow(image.T, cmap=cm.Greys_r)

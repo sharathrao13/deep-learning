@@ -7,6 +7,14 @@ Author: Angad Gill
 
 import sys
 from keras.models import model_from_json
+from keras.datasets import cifar10
+from keras.utils import np_utils
+
+from matplotlib import pyplot as plt
+import matplotlib.cm as cm
+
+import math
+
 
 
 def save_model(model, name):
@@ -66,12 +74,12 @@ def load_model(name):
     return model
 
 
-def output_at_layer(input_image, model, layer_num):
+def output_at_layer(input_image, model_name, layer_num, verbose=False):
     """
     This function is used to visualize activations at any layer in a
     Convolutional Neural Network model in Keras. It returns the output image
     for a given input image at the layer_num layer of the model (layer numbers
-    starting at 1).
+    starting at 1). The model will be loaded using the load_model() function.
 
     WARNING: This function will change the model. After using this function,
     you will need to reload/recreate the model if you want to use it for
@@ -86,14 +94,65 @@ def output_at_layer(input_image, model, layer_num):
     Parameters:
     -----------
     input_image: Numpy array that the model can accept
-    model: Trained Keras model
+    model_name: Name to be used with the load_model() function
     layer_num: Layer number between 1 and len(model.layers)
 
     Returns:
     --------
     output_image: Numpy array of the output at the layer_num layer
     """
+    model = load_model(model_name)
     model.layers = model.layers[:layer_num]  # Truncates layers
     model.compile(loss=model.loss, optimizer=model.optimizer)  # Recompiles model
     output_image = model.predict(input_image)  # Uses predict to get ouput
+    
+    if verbose:
+        # Print layer and image info
+        layer = model.layers[layer_num-1]
+        print layer
+        try:
+            print layer.W_shape
+        except:
+            pass
+        print "Image dimensions: " + str(output_image.shape)
+        
     return output_image
+
+
+def visualize_output(output_image, figsize=(15,15)):
+    """
+    This function will plot the output_image in a grid using Matplotlib.
+
+    Parameters:
+    ----------
+        output_image: output produced by the output_at_layer function that
+        needs to be visualized.
+
+    Returns:
+    -------
+        No returns.
+
+    """
+    feature_maps = output_image.shape[0]
+    rows_columns = int(math.ceil(math.sqrt(feature_maps)))  # To create a square grid
+
+    plt.figure(figsize=figsize)
+    for i, image in enumerate(output_image):  # Iterate through all feature maps
+        plt.subplot(rows_columns, rows_columns, i+1)
+        plt.axis('off')  # Turn off axes to save space on the visualization
+        plt.imshow(image.T, cmap=cm.Greys_r)
+
+
+def load_data():
+    """
+    Loads CIFAR-10 data using Keras.
+
+    Returns:
+    -------
+        (X_train, Y_train), (X_test, Y_test) dataset in numpy format
+
+    """
+    (X_train, y_train), (X_test, y_test) = cifar10.load_data()
+    Y_train = np_utils.to_categorical(y_train, 10)
+    Y_test = np_utils.to_categorical(y_test, 10)
+    return (X_train, Y_train), (X_test, Y_test)

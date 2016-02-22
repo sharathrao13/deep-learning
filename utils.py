@@ -14,6 +14,10 @@ from matplotlib import pyplot as plt
 import matplotlib.cm as cm
 
 import numpy as np
+from scipy.ndimage.interpolation import rotate
+
+from multiprocessing import Pool
+from multiprocessing import cpu_count
 
 
 def save_model(model, name):
@@ -142,6 +146,26 @@ def visualize_output(output_image, figsize=(15,15)):
         plt.imshow(image.T, cmap=cm.Greys_r)
 
 
+# TODO: Combine this function with visualize_output()
+def visualize_image_group(image_group, figsize=(15,15)):
+    """
+    Plot all images in an augmented group in a grid using Matplotlib.
+
+    Parameters:
+    ----------
+        image_group: group of augmented images as Numpy arrays
+
+    Returns:
+    -------
+        No returns.
+
+    """
+    for i, image in enumerate(image_group):
+        plt.subplot(2, 2, i+1)
+        plt.axis('off')
+        plt.imshow(image.T)
+
+
 def load_data():
     """
     Loads CIFAR-10 data using Keras.
@@ -152,6 +176,61 @@ def load_data():
 
     """
     (X_train, y_train), (X_test, y_test) = cifar10.load_data()
+
     Y_train = np_utils.to_categorical(y_train, 10)
     Y_test = np_utils.to_categorical(y_test, 10)
+
+    X_train = X_train.astype('float32')
+    X_test = X_test.astype('float32')
+
+    # Normalize
+    X_train /= 255
+    X_test /= 255
+
     return (X_train, Y_train), (X_test, Y_test)
+
+
+def move_image_channel(image):
+    """
+    Move the channel dimension from first to third
+
+    Parameters:
+        image: numpy array with 3 dimensions where channel is first
+
+    Returns:
+    -------
+        image: numpy array with 3 dimensions where channel is last
+    """
+    image = np.swapaxes(image, 0, 1)
+    image = np.swapaxes(image, 1, 2)
+    return image
+
+
+def augment_data(images, rotations):
+    """
+    Augment images with rotated versions of the image. This function returns a list of lists; the outer list is used to
+    group the original image with this augmented versions.
+
+    Parameters:
+    ----------
+        images: Numpy array images with channel dimension in the front
+        rotations:
+
+    Returns:
+    -------
+        augmented: list of lists containing the augmented images as Numpy arrays
+
+    """
+    pool = Pool(processes=cpu_count())
+    data = zip(images, [rotations for _ in range(len(images))])
+    augmented = pool.map(_augment_data, data)
+    return augmented
+
+
+def _augment_data(data):
+    image, rotations = data
+    augmented_images = [image]  # Add the original image to the list
+    # Rotate and pad with 'nearest' pixels
+    augmented_images += [rotate(image.T, r, mode='nearest').T for r in rotations]
+    augmented_images = np.array(augmented_images)
+    return augmented_images

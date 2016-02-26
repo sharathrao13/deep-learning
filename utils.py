@@ -143,7 +143,7 @@ def visualize_output(output_image, figsize=(15,15)):
     for i, image in enumerate(output_image[0]):  # Iterate through all feature maps
         plt.subplot(rows_columns, rows_columns, i+1)
         plt.axis('off')  # Turn off axes to save space on the visualization
-        plt.imshow(image.T, cmap=cm.Greys_r)
+        plt.imshow(image.T, cmap=cm.Greys_r, interpolation='none')
 
 
 # TODO: Combine this function with visualize_output()
@@ -163,7 +163,7 @@ def visualize_image_group(image_group, figsize=(15,15)):
     for i, image in enumerate(image_group):
         plt.subplot(2, 2, i+1)
         plt.axis('off')
-        plt.imshow(image.T)
+        plt.imshow(image.T, interpolation='none')
 
 
 def load_data():

@@ -7,6 +7,7 @@ Author: Angad Gill
 
 import sys
 from keras.models import model_from_json
+from keras.models import Sequential
 from keras.datasets import cifar10
 from keras.utils import np_utils
 
@@ -15,6 +16,7 @@ import matplotlib.cm as cm
 
 import numpy as np
 from scipy.ndimage.interpolation import rotate
+from scipy import linalg
 
 from multiprocessing import Pool
 from multiprocessing import cpu_count
@@ -77,16 +79,13 @@ def load_model(name):
     return model
 
 
-def output_at_layer(input_image, model_name, layer_num, verbose=False):
+def output_at_layer(input_image, model, layer_num, verbose=False):
     """
     This function is used to visualize activations at any layer in a
     Convolutional Neural Network model in Keras. It returns the output image
     for a given input image at the layer_num layer of the model (layer numbers
-    starting at 1). The model will be loaded using the load_model() function.
-
-    WARNING: This function will change the model. After using this function,
-    you will need to reload/recreate the model if you want to use it for
-    anything else.
+    starting at 1). The model should be Sequential type. This function will
+    not mutate the model.
 
     Reference: https://github.com/fchollet/keras/issues/431
 
@@ -96,22 +95,23 @@ def output_at_layer(input_image, model_name, layer_num, verbose=False):
 
     Parameters:
     -----------
-    input_image: Image in Numpy format from the dataset
-    model_name: Name to be used with the load_model() function
-    layer_num: Layer number between 1 and len(model.layers)
+        input_image: Image in Numpy format from the dataset
+        model: Name to be used with the load_model() function
+        layer_num: Layer number between 1 and len(model.layers)
+        verbose: Prints layer info
 
     Returns:
     --------
-    output_image: Numpy array of the output at the layer_num layer
+        output_image: Numpy array of the output at the layer_num layer
     """
-    model = load_model(model_name)
-    model.layers = model.layers[:layer_num]  # Truncates layers
-    model.compile(loss=model.loss, optimizer=model.optimizer)  # Recompiles model
-    output_image = model.predict(np.array([input_image]))  # Uses predict to get ouput
+    model_temp = Sequential()
+    model_temp.layers = model.layers[:layer_num]  # Truncates layers
+    model_temp.compile(loss=model.loss, optimizer=model.optimizer)  # Recompiles model_temp
+    output_image = model_temp.predict(np.array([input_image]))  # Uses predict to get ouput
     
     if verbose:
         # Print layer and image info
-        layer = model.layers[layer_num-1]
+        layer = model_temp.layers[layer_num-1]
         print layer
         try:
             print layer.W_shape
@@ -234,3 +234,46 @@ def _augment_data(data):
     augmented_images += [rotate(image.T, r, mode='nearest').T for r in rotations]
     augmented_images = np.array(augmented_images)
     return augmented_images
+
+
+def augment_image(image):
+    """
+    Returns a list with orginal image, its covariance matrix,
+    and real part of FFT. This keep only the first channel.
+    Image must have the first dimension as the channel.
+
+    Parameters:
+    -----------
+        image: numpy array of (channel, x, y) shape.
+
+    Returns:
+    --------
+        List containing 3 numpy arrays of (x, y) shape.
+    """
+    image = image[0]  # Keep the first channel
+    images = []
+    images += [image]
+    images += [np.dot(image, image.T)]
+    img_fft = np.fft.fftshift(np.fft.fftn(image))
+    img_fft = np.log10(img_fft)
+    images += [np.real(img_fft)]
+    return images
+
+
+def visualize_augmented_images(images):
+    """
+    Plots input images in a row using Matplotlib. Input images
+    must have only one channel.
+
+    Parameters:
+    -----------
+        images: list containing images in numpy array of (x, y) shape.
+    Returns:
+    --------
+        No return
+    """
+    plt.figure(figsize=(6,6))
+    for i, img in enumerate(images):
+        plt.subplot(1, len(images), i+1)
+        plt.axis('off')
+        plt.imshow(img, interpolation='none', cmap=cm.Greys_r)

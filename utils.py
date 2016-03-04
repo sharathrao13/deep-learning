@@ -231,7 +231,7 @@ def _augment_data(data):
     image, rotations = data
     augmented_images = [image]  # Add the original image to the list
     # Rotate and pad with 'nearest' pixels
-    augmented_images += [rotate(image.T, r, mode='nearest').T for r in rotations]
+    augmented_images += [rotate(image.T, r, reshape=False, mode='nearest').T for r in rotations]
     augmented_images = np.array(augmented_images)
     return augmented_images
 
@@ -277,3 +277,50 @@ def visualize_augmented_images(images):
         plt.subplot(1, len(images), i+1)
         plt.axis('off')
         plt.imshow(img, interpolation='none', cmap=cm.Greys_r)
+
+
+def diff_at_layer(image_group, layer_num, model, verbose=True):
+    """
+    Calculates the difference in neural network layer outputs between the original image
+    and its augmented versions.
+    The "difference" is the norm of the absolute difference of the output matrices.
+
+    Assumptions:
+        First image is the original
+        Model is sequential
+
+    Args:
+        image_group: list of numpy array is shape (channel, x, y)
+        layer_num: int starting with 1, where 1 is the first layer
+        model: Keras model
+        verbose: Print layer details and diffs
+
+    Returns:
+        layer_diffs: list of tuples: (image #, diffs list)
+
+    """
+    if verbose:
+        print model.layers[layer_num-1]
+
+    # Get output images for image_group
+    out = []
+    for image in image_group:
+        out += [output_at_layer(image, model, layer_num)]
+
+    layer_diffs = []  # list of tuples: (image #, diffs list)
+
+    maps = out[0].shape[1]  # number of feature maps
+
+    for image_num in range(1, len(out)):
+        diffs = []
+        for m in range(maps):
+            # diff_mat = np.abs(out[0][0][m] - out[image_num][0][m])
+            diff_mat = out[0][0][m] - out[image_num][0][m]
+            diffs += [np.linalg.norm(diff_mat)]
+        diffs = np.array(diffs)
+        if verbose:
+            print "Diff with #%d augmented image at layer %d: min: %0.2f, mean: %0.2f, max: %0.2f" % \
+            (image_num, layer_num, diffs.min(), diffs.mean(), diffs.max())
+        layer_diffs += [(image_num, diffs)]
+
+    return layer_diffs

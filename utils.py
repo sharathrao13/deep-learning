@@ -160,8 +160,9 @@ def visualize_image_group(image_group, figsize=(15,15)):
         No returns.
 
     """
+    plt.figure(figsize=(15, 6))
     for i, image in enumerate(image_group):
-        plt.subplot(2, 2, i+1)
+        plt.subplot(2, len(image_group), i+1)
         plt.axis('off')
         plt.imshow(image.T, interpolation='none')
 

@@ -225,6 +225,8 @@ def augment_data(images, rotations):
     pool = Pool(processes=cpu_count())
     data = zip(images, [rotations for _ in range(len(images))])
     augmented = pool.map(_augment_data, data)
+    pool.close()
+    pool.join()
     return augmented
 
 

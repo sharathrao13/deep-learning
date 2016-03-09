@@ -263,6 +263,35 @@ def augment_image(image):
     return images
 
 
+def augmented_data_batches(data, labels, rotations, batch_size):
+    """
+    Generator that returns a new batch of augmented data each iteration.
+    Example:
+        for test_flat, labels_flat in util.augmented_data_batches(X_test, Y_test, [90, 180, 270], 100):
+            loss, accuracy = model.evaluate(np.array(test_flat), np.array(labels_flat), show_accuracy=True)
+
+    Parameters:
+    -----------
+        data: Images to be augmented.
+        rotations: Array of angles to rotate the image in. 0-360.
+        batch_size: Amount of images to draw from |data| each iteration.
+
+    Returns:
+    --------
+        Flattened list of augmented and original images.
+        Length of returned list is |batch_size| * len(|rotations|).
+    """
+    for i in xrange(0, data.shape[0], batch_size):
+        X_test_aug = augment_data(data[i:i+batch_size], rotations)
+        X_test_aug_flat = [x for X_test_group in X_test_aug for x in X_test_group]
+
+        Y_test_aug_flat = []
+        for y in labels[i:i+batch_size]:
+            Y_test_aug_flat += [y for _ in range(len(rotations)+1)]
+
+        yield X_test_aug_flat, Y_test_aug_flat
+
+
 def visualize_augmented_images(images):
     """
     Plots input images in a row using Matplotlib. Input images

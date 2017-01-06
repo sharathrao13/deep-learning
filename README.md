@@ -13,6 +13,6 @@ Install the following Python packages to run the code in the project:
   * Then, `pip install h5py`  
 
 ## Team Members
-* Angad Gill
-* Brandon Huynh
-* Sharath Rao
+* [Angad Gill](https://github.com/angadgill)
+* [Brandon Huynh](https://github.com/animekraxe)
+* [Sharath Rao](https://github.com/sharathrao13)
